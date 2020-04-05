@@ -1,1 +1,1 @@
-# java-shared-pipeline-example
+# Jenkins Shared Pipeline Examples
