@@ -38,7 +38,9 @@ spec:
     }
     stages {
       stage('SETUP: Test Stage') {
-        echo 'hello jenkins openshift'
+        steps {
+          echo 'hello jenkins openshift'
+        }
       }
     }
   }
