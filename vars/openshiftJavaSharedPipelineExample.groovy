@@ -4,7 +4,6 @@ def call(Map args) {
   pipeline {
     agent {
       kubernetes {
-        label "jenkins-${env.BUILD_ID}"
         defaultContainer 'jenkins-slave-mvn'
         yaml """
 apiVersion: v1
@@ -13,6 +12,7 @@ metadata:
   name: jenkins-${env.BUILD_ID}
   namespace: mgt
 spec:
+  serviceAccountName: jenkins
   containers:
   - name: 'jnlp'
     volumeMounts:
