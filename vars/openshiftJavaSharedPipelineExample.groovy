@@ -22,7 +22,7 @@ spec:
     volumeMounts:
     - mountPath: "/jenkins-maven"
       name: maven-pvc
-    image: openshift/jenkins-slave-maven-centos7
+    image: registry.redhat.io/openshift4/ose-jenkins-agent-maven
     tty: true
     env:
     - name: MAVEN_OPTS
