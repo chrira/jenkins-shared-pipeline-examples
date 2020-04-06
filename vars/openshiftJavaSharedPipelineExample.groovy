@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-
+// TODO: namepsace in pod def below is temporary
 def call(Map args) {
   pipeline {
     agent {
@@ -9,6 +9,9 @@ def call(Map args) {
         yaml """
 apiVersion: v1
 kind: Pod
+metadata:
+  name: jenkins-${env.BUILD_ID}
+  namespace: mgt
 spec:
   containers:
   - name: 'jnlp'
