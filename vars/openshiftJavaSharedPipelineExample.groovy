@@ -67,9 +67,16 @@ spec:
             dir('openshift') {
               script {
                 openshift.withCluster('openshift') {
+
                   // TODO: Temporarily hardcoded
                   openshift.withProject('mgt') {
                     openshift.apply(openshift.process(readFile('buildConfig.yml'), '-p', 'IMAGE_NAMESPACE=sample-rest-service', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=dev'))
+
+                  // TODO: temporarily hardcoded bc name
+                  def bc = openshift.selector('bc/sample-rest-service')
+                  def buildSelector = bc.startBuild()
+                  buildSelector.logs('-f')
+
                   }
                 }
               }
