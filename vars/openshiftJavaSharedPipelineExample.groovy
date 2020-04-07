@@ -42,6 +42,7 @@ spec:
     stages {
       stage('BUILD: Build and Package Application') {
         steps {
+          sh 'mkdir -p /usr/share/maven'
           sh 'mvn clean package'
         }
       }
