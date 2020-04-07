@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-// TODO: namepsace in pod def below is temporary
+
 // TODO: the maven image below is temporary
 def call(Map args) {
   pipeline {
@@ -11,9 +11,10 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: jenkins-${env.BUILD_ID}
-  namespace: mgt
 spec:
   serviceAccountName: jenkins
+  imagePullSecrets:
+  - name: quay-pull-secret
   containers:
   - name: 'jnlp'
     volumeMounts:
@@ -26,6 +27,11 @@ spec:
     image: maven:3.6.1-jdk-8-alpine
     tty: true
     command:
+    - cat
+  - name: jenkins-slave-oc
+    image: registry.redhat.io/openshift3/ose-cli
+    tty: true
+    comand:
     - cat
   volumes:
   - name: docker-socket
@@ -53,6 +59,22 @@ spec:
       stage('DEV: Unit Test Application') {
         steps {
           sh 'mvn test'
+        }
+      }
+     stage('DEV: OpenShift Source to Image Build') {
+        steps {
+          container('jenkins-slave-oc') {
+            dir('openshift') {
+              script {
+                openshift.withCluster('openshift') {
+                  // TODO: Temporarily hardcoded
+                  openshift.withProject('mgt') {
+                    openshift.apply(openshift.process(readFile('buildConfig.yml'), '-p', 'IMAGE_NAMESPACE=sample-rest-service', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=dev'))
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
