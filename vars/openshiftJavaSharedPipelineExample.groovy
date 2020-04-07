@@ -40,7 +40,7 @@ spec:
     stages {
       stage('BUILD: Build and Package Application') {
         steps {
-          sh 'mvn clean package'
+          sh 'mvn package'
         }
       }
       stage('DEV: SonarQube Scan') {
@@ -48,6 +48,11 @@ spec:
           withSonarQubeEnv('sonarqube') {
             sh 'mvn sonar:sonar'
           }
+        }
+      }
+      stage('DEV: Unit Test Application') {
+        steps {
+          sh 'mvn test'
         }
       }
     }
