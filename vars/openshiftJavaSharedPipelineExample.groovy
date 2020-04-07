@@ -43,6 +43,13 @@ spec:
           sh 'mvn clean package'
         }
       }
+      stage('DEV: SonarQube Scan') {
+        steps {
+          withSonarQubeEnv('sonarqube') {
+            sh 'mvn sonar:sonar'
+          }
+        }
+      }
     }
   }
 }
