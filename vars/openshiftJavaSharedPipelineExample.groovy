@@ -74,7 +74,7 @@ spec:
 
                   // TODO: temporarily hardcoded bc name
                   def bc = openshift.selector('bc/sample-rest-service')
-                  def buildSelector = bc.startBuild()
+                  def buildSelector = bc.startBuild('--from-dir="."')
                   buildSelector.logs('-f')
 
                   }
