@@ -40,9 +40,9 @@ spec:
       }
     }
     stages {
-      stage('SETUP: Test Stage') {
+      stage('BUILD: Build and Package Application') {
         steps {
-          echo 'hello jenkins openshift'
+          sh 'mvn clean package'
         }
       }
     }
