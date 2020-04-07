@@ -1,5 +1,6 @@
 #!/usr/bin/env groovy
 // TODO: namepsace in pod def below is temporary
+// TODO: the maven image below is temporary
 def call(Map args) {
   pipeline {
     agent {
@@ -22,10 +23,7 @@ spec:
     volumeMounts:
     - mountPath: "/jenkins-maven"
       name: maven-pvc
-    image: openshift/jenkins-agent-maven-35-centos7
-    env:
-    - name: MAVEN_OPTS
-      value: "-Duser.home=/usr/share/maven"
+    image: maven:3.6.1-jdk-8-alpine
     tty: true
     command:
     - cat
@@ -42,7 +40,6 @@ spec:
     stages {
       stage('BUILD: Build and Package Application') {
         steps {
-          sh 'mkdir -p /usr/share/maven'
           sh 'mvn clean package'
         }
       }
