@@ -23,6 +23,9 @@ spec:
     - mountPath: "/jenkins-maven"
       name: maven-pvc
     image: openshift/jenkins-agent-maven-35-centos7
+    env:
+    - name: MAVEN_OPTS
+      value: "-Duser.home=/usr/share/maven"
     tty: true
     command:
     - cat
