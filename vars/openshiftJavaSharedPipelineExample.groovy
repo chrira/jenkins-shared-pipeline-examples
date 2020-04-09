@@ -13,8 +13,6 @@ metadata:
   name: jenkins-${env.BUILD_ID}
 spec:
   serviceAccountName: jenkins
-  imagePullSecrets:
-  - name: quay-pull-secret
   containers:
   - name: 'jnlp'
     volumeMounts:
@@ -29,7 +27,7 @@ spec:
     command:
     - cat
   - name: jenkins-slave-oc
-    image: registry.redhat.io/openshift3/ose-cli
+    image: openshift3/ose-cli
     tty: true
     comand:
     - cat
@@ -133,6 +131,11 @@ spec:
               }
             }
           }
+        }
+      }
+      stage('TEST: Retag Image for Test') {
+        steps {
+          echo "Retag image"
         }
       }
     }
