@@ -61,7 +61,7 @@ spec:
           sh 'mvn test'
         }
       }
-     stage('DEV: OpenShift Source to Image Build') {
+     stage('DEV: OpenShift Create Build Config') {
         steps {
           container('jenkins-slave-oc') {
             dir('openshift') {
@@ -70,14 +70,28 @@ spec:
 
                   // TODO: Temporarily hardcoded
                   openshift.withProject('mgt') {
-                    openshift.apply(openshift.process(readFile('buildConfig.yml'), '-p', 'IMAGE_NAMESPACE=sample-rest-service', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=dev'))
-
-                  // TODO: temporarily hardcoded bc name
-                  def bc = openshift.selector('bc/sample-rest-service')
-                  def buildSelector = bc.startBuild('--from-dir="."')
-                  buildSelector.logs('-f')
-
+                    openshift.apply(openshift.process(readFile('buildConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=dev'))
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+     stage('DEV: OpenShift Start Source to Image Build') {
+        steps {
+          container('jenkins-slave-oc') {
+            script {
+              openshift.withCluster('openshift') {
+
+                // TODO: Temporarily hardcoded
+                openshift.withProject('mgt') {
+
+                // TODO: temporarily hardcoded bc name
+                def bc = openshift.selector('bc/sample-rest-service')
+                def buildSelector = bc.startBuild('--from-dir="${WORKSPACE}"')
+                buildSelector.logs('-f')
+
                 }
               }
             }
