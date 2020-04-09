@@ -124,7 +124,7 @@ spec:
 
                     openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=dev'))
 
-                    openshift.apply(readFile('service.yml'))
+                    openshift.apply(openshift.process(readFile('service.yml')))
 
                     openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=dev', '-p', 'SUBDOMAIN=griffinsdemos.com'))
 
