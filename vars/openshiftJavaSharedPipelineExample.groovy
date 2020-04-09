@@ -70,6 +70,9 @@ spec:
 
                   // TODO: Temporarily hardcoded
                   openshift.withProject('mgt') {
+                    
+                    echo "Creating Image Build Config"
+
                     openshift.apply(openshift.process(readFile('buildConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=dev'))
                   }
                 }
@@ -89,9 +92,43 @@ spec:
 
                 // TODO: temporarily hardcoded bc name
                 def bc = openshift.selector('bc/sample-rest-service')
+                
+                echo "Starting Image Build"
+
                 def buildSelector = bc.startBuild('--from-dir="${WORKSPACE}"')
                 //buildSelector.logs('-f')
 
+                }
+              }
+            }
+          }
+        }
+      }
+      stage('DEV: Retrieve Clair Results') {
+        steps {
+          echo "TODO: Retrieve Clair Results"
+        }
+      }
+      // TODO: There is a potential race condition here with the image build, follow logs will solve
+      stage('DEV: OpenShift Deploy Application') {
+        steps {
+          container('jenkins-slave-oc') {
+            dir('openshift') {
+              script {
+                openshift.withCluster('openshift') {
+
+                  // TODO: Temporarily hardcoded
+                  openshift.withProject('dev') {
+                    
+                    echo "Create all application resources"
+
+                    openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=dev'))
+
+                    openshift.apply(readFile('service.yml'))
+
+                    openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=dev', '-p', 'SUBDOMAIN=griffinsdemos.com'))
+
+                  }
                 }
               }
             }
