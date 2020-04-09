@@ -1,6 +1,7 @@
 #!/usr/bin/env groovy
 
 // TODO: the maven image below is temporary
+// TODO: Secret mount is temporary
 def call(Map args) {
   pipeline {
     agent {
@@ -22,6 +23,9 @@ spec:
     volumeMounts:
     - mountPath: "/jenkins-maven"
       name: maven-pvc
+    - mountPath: /var/run/secrets/kubernetes.io/dockerconfigjson
+      name: dockerconfigjson
+      readOnly: true
     image: maven:3.6.1-jdk-8-alpine
     tty: true
     command:
@@ -32,6 +36,9 @@ spec:
     comand:
     - cat
   volumes:
+  - name: dockerconfigjson
+    secret:
+      secretName: quay-pull-secret
   - name: docker-socket
     hostPath:
       path: /var/run/docker.sock
@@ -135,7 +142,10 @@ spec:
       }
       stage('TEST: Retag Image for Test') {
         steps {
-          echo "Retag image"
+
+          echo "Retagging image"
+
+          sh "skopeo copy --authfile /var/run/secrets/kubernetes.io/dockerconfigjson/.dockerconfigjson docker://quay-mgt-demo.griffinsdemos.com/summit-team/sample-rest-service:dev docker://quay-mgt-demo.griffinsdemos.com/summit-team/sample-rest-service:test"
         }
       }
     }
