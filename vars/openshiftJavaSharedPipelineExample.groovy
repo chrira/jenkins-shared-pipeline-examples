@@ -148,6 +148,31 @@ spec:
           sh "skopeo copy --authfile /var/run/secrets/kubernetes.io/dockerconfigjson/.dockerconfigjson docker://quay-mgt-demo.griffinsdemos.com/summit-team/sample-rest-service:dev docker://quay-mgt-demo.griffinsdemos.com/summit-team/sample-rest-service:test"
         }
       }
+      stage('TEST: OpenShift Deploy Application') {
+        steps {
+          container('jenkins-slave-oc') {
+            dir('openshift') {
+              script {
+                openshift.withCluster('openshift') {
+
+                  // TODO: Temporarily hardcoded
+                  openshift.withProject('test') {
+
+                    echo "Create all application resources"
+
+                    openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=test'))
+
+                    openshift.apply(openshift.process(readFile('service.yml')))
+
+                    openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=test', '-p', 'SUBDOMAIN=griffinsdemos.com'))
+
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
