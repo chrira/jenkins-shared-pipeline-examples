@@ -167,6 +167,11 @@ spec:
           echo "TODO: Automated Acceptance Testing w/ Selenium"
         }
       }
+      stage('TEST: Approval to Promote') {
+          steps {
+              input 'Promote to PROD environment?'
+          }
+      }
       stage('PROD: Retag Image for Prod') {
         steps {
           container('jenkins-slave-image-mgmt') {
