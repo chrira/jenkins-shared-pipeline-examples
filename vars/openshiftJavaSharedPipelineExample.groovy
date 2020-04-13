@@ -162,6 +162,33 @@ spec:
           }
         }
       }
+      stage('PROD: Retag Image for Prod') {
+        steps {
+          container('jenkins-slave-image-mgmt') {
+            echo "Retagging image"
+            sh "skopeo copy --authfile /var/run/secrets/kubernetes.io/dockerconfigjson/.dockerconfigjson docker://quay-mgt-demo.griffinsdemos.com/summit-team/sample-rest-service:test docker://quay-mgt-demo.griffinsdemos.com/summit-team/sample-rest-service:prod"
+          }
+        }
+      }
+      stage('PROD: OpenShift Deploy Application') {
+        steps {
+          container('jenkins-slave-oc') {
+            dir('openshift') {
+              script {
+                openshift.withCluster('openshift') {
+                  // TODO: Temporarily hardcoded
+                  openshift.withProject('prod') {
+                    echo "Create all application resources"
+                    openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=prod'))
+                    openshift.apply(openshift.process(readFile('service.yml')))
+                    openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=prod', '-p', 'SUBDOMAIN=griffinsdemos.com'))
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
