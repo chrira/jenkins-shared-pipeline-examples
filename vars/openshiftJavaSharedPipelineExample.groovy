@@ -162,6 +162,11 @@ spec:
           }
         }
       }
+      stage('TEST: Automated Acceptance Testing') {
+        steps {
+          echo "TODO: Automated Acceptance Testing w/ Selenium"
+        }
+      }
       stage('PROD: Retag Image for Prod') {
         steps {
           container('jenkins-slave-image-mgmt') {
