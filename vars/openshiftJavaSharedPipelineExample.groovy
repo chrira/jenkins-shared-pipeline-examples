@@ -118,7 +118,7 @@ spec:
                 
                 echo "Starting Image Build"
                 def buildSelector = bc.startBuild('--from-dir="${WORKSPACE}"')
-                //buildSelector.logs('-f')
+                buildSelector.logs('-f')
                 }
               }
             }
