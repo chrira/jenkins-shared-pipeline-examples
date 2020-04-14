@@ -114,7 +114,65 @@ spec:
       }
       stage('DEV: Retrieve Clair Results') {
         steps {
-          echo "TODO: Retrieve Clair Results"
+          script {
+            tagInfo = httpRequest url:"https://quay-mgt-demo.griffinsdemos.com/api/v1/repository/summit-team/sample-rest-service/tag/dev/images"
+            tagInfo = readJSON text: tagInfo.content
+            index_max = -1
+            for( imageRef in tagInfo.images ) {
+              if( imageRef.sort_index > index_max ) {
+                imageId = imageRef.id
+                index_max = imageRef.sort_index
+              }
+            }
+
+            timeout(time: 5, unit: 'MINUTES') {
+              waitUntil() {
+                vulns = httpRequest url:"https://quay-mgt-demo.griffinsdemos.com/api/v1/repository/summit-team/sample-rest-service/image/${imageId}/security?vulnerabilities=true"
+                vulns = readJSON text: vulns.content  
+                if(vulns.status != "scanned") {
+                  return false
+                }
+
+                low=[]
+                medium=[]
+                high=[]
+                critical=[]
+                     
+                for ( rpm in vulns.data.Layer.Features ) {
+                  vulnList = rpm.Vulnerabilities
+                  if(vulnList != null && vulnList.size() != 0) {
+                    i = 0;
+                    for(vuln in vulnList) {
+                      switch(vuln.Severity) {
+                        case "Low":
+                          low.add(vuln)
+                          break
+                        case "Medium":
+                          medium.add(vuln)
+                          break
+                        case "High":
+                          high.add(vuln)
+                          break
+                        case "Critical":
+                          critical.add(vuln)
+                          break
+                        default:
+                          echo "Should never be here"
+                          currentBuild.result = "FAILURE"
+                          break
+                      }       
+                    }
+                  }
+                }
+                return true
+              }
+            }
+
+            if(critical.size() > 0 || high.size() > 0) {
+              echo "Image has ${critical.size()} critical vulnerabilities and ${high.size()} high vulnerabilities."
+              currentBuild.result = "UNSTABLE"
+            }
+          }
         }
       }
       // TODO: There is a potential race condition here with the image build, follow logs will solve
