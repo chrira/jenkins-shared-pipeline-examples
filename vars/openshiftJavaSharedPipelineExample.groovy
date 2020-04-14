@@ -117,8 +117,7 @@ spec:
                 def bc = openshift.selector("bc/${serviceName}")
                 
                 echo "Starting Image Build"
-                def buildSelector = bc.startBuild('--from-dir="${WORKSPACE}"')
-                buildSelector.logs('-f')
+                bc.startBuild("--from-dir='${WORKSPACE}'", '--follow')
                 }
               }
             }
