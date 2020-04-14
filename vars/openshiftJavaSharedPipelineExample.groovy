@@ -1,6 +1,22 @@
 #!/usr/bin/env groovy
 
 def call(Map args) {
+
+  def serviceName = args.serviceName
+
+  def subdomain = args.subdomain
+
+  def mgtNamespace = 'mgt'
+  def devNamespace = 'dev'
+  def testNamespace = 'test'
+  def prodNamespace = 'prod'
+
+  def imageRegistryUrl = args.imageRegistryUrl
+
+  def imageNamespace = args.imageNamespace
+
+  def prodTag = 'latest'
+
   pipeline {
     agent {
       kubernetes {
@@ -81,11 +97,10 @@ spec:
             dir('openshift') {
               script {
                 openshift.withCluster('openshift') {
-                  // TODO: Temporarily hardcoded
-                  openshift.withProject('mgt') {
+                  openshift.withProject("${mgtNamespace}") {
                     
                     echo "Creating Image Build Config"
-                    openshift.apply(openshift.process(readFile('buildConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=dev'))
+                    openshift.apply(openshift.process(readFile('buildConfig.yml'), '-p', "IMAGE_NAMESPACE=${imageNamespace}", '-p', "IMAGE_REGISTRY_URL=${imageRegistryUrl}", '-p', "IMAGE_TAG=${devNamespace}"))
                   }
                 }
               }
@@ -98,10 +113,8 @@ spec:
           container('jenkins-slave-oc') {
             script {
               openshift.withCluster('openshift') {
-                // TODO: Temporarily hardcoded
-                openshift.withProject('mgt') {
-                // TODO: temporarily hardcoded bc name
-                def bc = openshift.selector('bc/sample-rest-service')
+                openshift.withProject("${mgtNamespace}") {
+                def bc = openshift.selector("bc/${serviceName}")
                 
                 echo "Starting Image Build"
                 def buildSelector = bc.startBuild('--from-dir="${WORKSPACE}"')
@@ -115,8 +128,11 @@ spec:
       stage('DEV: Retrieve Clair Results') {
         steps {
           script {
+
+            def quayApiUrl = "https://${imageRegistryUrl}/api/v1/repository/${imageNamespace}/${serviceName}"
+
             withCredentials([string(credentialsId: 'quay-bearer-token', variable: 'bearerToken')]) {
-              tagInfo = httpRequest url:"https://quay-mgt-demo.griffinsdemos.com/api/v1/repository/summit-team/sample-rest-service/tag/dev/images", customHeaders:[[name:'Authorization', value:"Bearer ${bearerToken}"]]
+              tagInfo = httpRequest url:"${quayApiUrl}/tag/${devNamespace}/images", customHeaders:[[name:'Authorization', value:"Bearer ${bearerToken}"]]
               tagInfo = readJSON text: tagInfo.content
               index_max = -1
               for( imageRef in tagInfo.images ) {
@@ -128,7 +144,7 @@ spec:
 
               timeout(time: 5, unit: 'MINUTES') {
                 waitUntil() {
-                  vulns = httpRequest url:"https://quay-mgt-demo.griffinsdemos.com/api/v1/repository/summit-team/sample-rest-service/image/${imageId}/security?vulnerabilities=true", customHeaders:[[name:'Authorization', value:"Bearer ${bearerToken}"]]
+                  vulns = httpRequest url:"${quayApiUrl}/image/${imageId}/security?vulnerabilities=true", customHeaders:[[name:'Authorization', value:"Bearer ${bearerToken}"]]
                   vulns = readJSON text: vulns.content  
                   if(vulns.status != "scanned") {
                     return false
@@ -200,13 +216,12 @@ spec:
             dir('openshift') {
               script {
                 openshift.withCluster('openshift') {
-                  // TODO: Temporarily hardcoded
-                  openshift.withProject('dev') {
+                  openshift.withProject("${devNamespace}") {
                     
                     echo "Create all application resources"
-                    openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=dev'))
+                    openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', "IMAGE_NAMESPACE=${imageNamespace}", '-p', "IMAGE_REGISTRY_URL=${imageRegistryUrl}", '-p', "IMAGE_TAG=${devNamespace}"))
                     openshift.apply(openshift.process(readFile('service.yml')))
-                    openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=dev', '-p', 'SUBDOMAIN=apps.demo.griffinsdemos.com'))
+                    openshift.apply(openshift.process(readFile('route.yml'), '-p', "NAMESPACE=${devNamespace}", '-p', "SUBDOMAIN=${subdomain}"))
                   }
                 }
               }
@@ -216,14 +231,14 @@ spec:
       }
       stage('DEV: Notification of Promotion') {
         steps {
-          slackSend color: 'good', message: "${env.JOB_BASE_NAME} is deployed in dev now promoting to test"
+          slackSend color: 'good', message: "${serviceName} is deployed in ${devNamespace} now promoting to ${testNamespace}"
         }
       }
       stage('TEST: Retag Image for Test') {
         steps {
           container('jenkins-slave-image-mgmt') {
             echo "Retagging image"
-            sh "skopeo copy --authfile /var/run/secrets/kubernetes.io/dockerconfigjson/.dockerconfigjson docker://quay-mgt-demo.griffinsdemos.com/summit-team/sample-rest-service:dev docker://quay-mgt-demo.griffinsdemos.com/summit-team/sample-rest-service:test"
+            sh "skopeo copy --authfile /var/run/secrets/kubernetes.io/dockerconfigjson/.dockerconfigjson docker://${imageRegistryUrl}/${imageNamespace}/${serviceName}:${devNamespace} docker://${imageRegistryUrl}/${imageNamespace}/${serviceName}:${testNamespace}"
           }
         }
       }
@@ -233,12 +248,11 @@ spec:
             dir('openshift') {
               script {
                 openshift.withCluster('openshift') {
-                  // TODO: Temporarily hardcoded
-                  openshift.withProject('test') {
+                  openshift.withProject("${testNamespace}") {
                     echo "Create all application resources"
-                    openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=test'))
+                    openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', "IMAGE_NAMESPACE=${imageNamespace}", '-p', "IMAGE_REGISTRY_URL=${imageRegistryUrl}", '-p', "IMAGE_TAG=${testNamespace}"))
                     openshift.apply(openshift.process(readFile('service.yml')))
-                    openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=test', '-p', 'SUBDOMAIN=apps.demo.griffinsdemos.com'))
+                    openshift.apply(openshift.process(readFile('route.yml'), '-p', "NAMESPACE=${testNamespace}", '-p', "SUBDOMAIN=${subdomain}"))
                   }
                 }
               }
@@ -251,14 +265,14 @@ spec:
           container('jenkins-slave-npm') {
             dir('postman') {
               echo "Run Postman Tests"
-              sh 'newman run sample-rest-service.postman_collection.json --env-var subdomain=apps.demo.griffinsdemos.com --env-var namespace=test'
+              sh "newman run ${serviceName}.postman_collection.json --env-var subdomain=${subdomain} --env-var namespace=${testNamespace}"
             }
           }
         }
       }
       stage('TEST: Approval to Promote') {
           steps {
-              slackSend color: 'good', message: "${env.JOB_BASE_NAME} is deployed in test and has passed AAT, are you ready to promote? ${env.BUILD_URL}/console"
+              slackSend color: 'good', message: "${serviceName} is deployed in ${testNamespace} and has passed AAT, are you ready to promote? ${env.BUILD_URL}/console"
               input 'Promote to PROD environment?'
           }
       }
@@ -266,7 +280,7 @@ spec:
         steps {
           container('jenkins-slave-image-mgmt') {
             echo "Retagging image"
-            sh "skopeo copy --authfile /var/run/secrets/kubernetes.io/dockerconfigjson/.dockerconfigjson docker://quay-mgt-demo.griffinsdemos.com/summit-team/sample-rest-service:test docker://quay-mgt-demo.griffinsdemos.com/summit-team/sample-rest-service:prod"
+            sh "skopeo copy --authfile /var/run/secrets/kubernetes.io/dockerconfigjson/.dockerconfigjson docker://${imageRegistryUrl}/${imageNamespace}/${serviceName}:${testNamespace} docker://${imageRegistryUrl}/${imageNamespace}/${serviceName}:${prodTag}"
           }
         }
       }
@@ -276,12 +290,11 @@ spec:
             dir('openshift') {
               script {
                 openshift.withCluster('openshift') {
-                  // TODO: Temporarily hardcoded
-                  openshift.withProject('prod') {
+                  openshift.withProject("${prodNamespace}") {
                     echo "Create all application resources"
-                    openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=prod'))
+                    openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', "IMAGE_NAMESPACE=${imageNamespace}", '-p', "IMAGE_REGISTRY_URL=${imageRegistryUrl}", '-p', "IMAGE_TAG=${prodTag}"))
                     openshift.apply(openshift.process(readFile('service.yml')))
-                    openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=prod', '-p', 'SUBDOMAIN=apps.demo.griffinsdemos.com'))
+                    openshift.apply(openshift.process(readFile('route.yml'), '-p', "NAMESPACE=${prodNamespace}", '-p', "SUBDOMAIN=${subdomain}"))
                   }
                 }
               }
@@ -291,7 +304,7 @@ spec:
       }
       stage('PROD: Notification of Deployment') {
         steps {
-          slackSend color: 'good', message: "${env.JOB_BASE_NAME} is deployed in prod"
+          slackSend color: 'good', message: "${serviceName} is deployed in ${prodNamespace}"
         }
       }
     }
