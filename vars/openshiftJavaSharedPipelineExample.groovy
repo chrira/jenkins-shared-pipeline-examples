@@ -115,62 +115,80 @@ spec:
       stage('DEV: Retrieve Clair Results') {
         steps {
           script {
-            tagInfo = httpRequest url:"https://quay-mgt-demo.griffinsdemos.com/api/v1/repository/summit-team/sample-rest-service/tag/dev/images"
-            tagInfo = readJSON text: tagInfo.content
-            index_max = -1
-            for( imageRef in tagInfo.images ) {
-              if( imageRef.sort_index > index_max ) {
-                imageId = imageRef.id
-                index_max = imageRef.sort_index
-              }
-            }
-
-            timeout(time: 5, unit: 'MINUTES') {
-              waitUntil() {
-                vulns = httpRequest url:"https://quay-mgt-demo.griffinsdemos.com/api/v1/repository/summit-team/sample-rest-service/image/${imageId}/security?vulnerabilities=true"
-                vulns = readJSON text: vulns.content  
-                if(vulns.status != "scanned") {
-                  return false
+            withCredentials([string(credentialsId: 'quay-bearer-token', variable: 'bearerToken')]) {
+              tagInfo = httpRequest url:"https://quay-mgt-demo.griffinsdemos.com/api/v1/repository/summit-team/sample-rest-service/tag/dev/images", customHeaders:[[name:'Authorization', value:"Bearer ${bearerToken}"]]
+              tagInfo = readJSON text: tagInfo.content
+              index_max = -1
+              for( imageRef in tagInfo.images ) {
+                if( imageRef.sort_index > index_max ) {
+                  imageId = imageRef.id
+                  index_max = imageRef.sort_index
                 }
+              }
 
-                low=[]
-                medium=[]
-                high=[]
-                critical=[]
-                     
-                for ( rpm in vulns.data.Layer.Features ) {
-                  vulnList = rpm.Vulnerabilities
-                  if(vulnList != null && vulnList.size() != 0) {
-                    i = 0;
-                    for(vuln in vulnList) {
-                      switch(vuln.Severity) {
-                        case "Low":
-                          low.add(vuln)
-                          break
-                        case "Medium":
-                          medium.add(vuln)
-                          break
-                        case "High":
-                          high.add(vuln)
-                          break
-                        case "Critical":
-                          critical.add(vuln)
-                          break
-                        default:
-                          echo "Should never be here"
-                          currentBuild.result = "FAILURE"
-                          break
-                      }       
+              timeout(time: 5, unit: 'MINUTES') {
+                waitUntil() {
+                  vulns = httpRequest url:"https://quay-mgt-demo.griffinsdemos.com/api/v1/repository/summit-team/sample-rest-service/image/${imageId}/security?vulnerabilities=true", customHeaders:[[name:'Authorization', value:"Bearer ${bearerToken}"]]
+                  vulns = readJSON text: vulns.content  
+                  if(vulns.status != "scanned") {
+                    return false
+                  }
+
+                  low=[]
+                  medium=[]
+                  high=[]
+                  critical=[]
+                  negligible=[]
+                  unknown=[]
+
+                  for ( rpm in vulns.data.Layer.Features ) {
+                    vulnList = rpm.Vulnerabilities
+                    if(vulnList != null && vulnList.size() != 0) {
+                      i = 0;
+                      for(vuln in vulnList) {
+                        switch(vuln.Severity) {
+                          case "Low":
+                            low.add(vuln)
+                            break
+                          case "Medium":
+                            medium.add(vuln)
+                            break
+                          case "High":
+                            high.add(vuln)
+                            break
+                          case "Critical":
+                            critical.add(vuln)
+                            break
+                          case "Negligible":
+                            negligible.add(vuln)
+                            break
+                          case "Unknown":
+                            unknown.add(vuln)
+                            break
+                          default:
+                            currentBuild.result = "FAILURE"
+                            error("Issue with Clair Image Scanning")
+                            break
+                        }       
+                      }
                     }
                   }
+                  return true
                 }
-                return true
               }
-            }
 
-            if(critical.size() > 0 || high.size() > 0) {
-              echo "Image has ${critical.size()} critical vulnerabilities and ${high.size()} high vulnerabilities."
-              currentBuild.result = "UNSTABLE"
+              echo "Image has ${critical.size()} critical vulnerabilities"
+              echo "Image has ${high.size()} high vulnerabilities"
+              echo "Image has ${medium.size()} medium vulnerabilities"
+              echo "Image has ${low.size()} low vulnerabilities"
+              echo "Image has ${negligible.size()} negligible vulnerabilities"
+              echo "Image has ${unknown.size()} unknown vulnerabilities"
+
+              // error only on critical issues, can increase/decrease threshold here
+              if(critical.size() > 0) {
+                echo "Image did not meet acceptable threshold, marking UNSTABLE"
+                currentBuild.result = "UNSTABLE"
+              }
             }
           }
         }
