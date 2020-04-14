@@ -55,8 +55,6 @@ spec:
     stages {
       stage('BUILD: Build and Package Application') {
         steps {
-          sh 'id'
-          sh 'echo $PATH'
           sh 'mvn package'
         }
       }
@@ -174,7 +172,7 @@ spec:
       }
       stage('TEST: Approval to Promote') {
           steps {
-              slackSend color: 'good', message: "${env.JOB_BASE_NAME} is deployed in test and has passed AAT, are you ready to promote? ${env.BUILD_URL}"
+              slackSend color: 'good', message: "${env.JOB_BASE_NAME} is deployed in test and has passed AAT, are you ready to promote? ${env.BUILD_URL}/console"
               input 'Promote to PROD environment?'
           }
       }
