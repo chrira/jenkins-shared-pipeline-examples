@@ -43,6 +43,11 @@ spec:
     - mountPath: /var/run/secrets/kubernetes.io/dockerconfigjson
       name: dockerconfigjson
       readOnly: true
+  - name: jenkins-slave-npm
+    image: quay-mgt-demo.griffinsdemos.com/summit-team/jenkins-slave-npm
+    tty: true
+    command:
+    - cat
   volumes:
   - name: dockerconfigjson
     secret:
@@ -167,7 +172,12 @@ spec:
       }
       stage('TEST: Automated Acceptance Testing') {
         steps {
-          echo "TODO: Automated Acceptance Testing w/ Selenium"
+          container('jenkins-slave-npm') {
+            dir('postman') {
+              echo "Run Postman Tests"
+              sh 'newman run sample-rest-service.postman_collection.json --env-var subdomain=apps.demo.griffinsdemos.com --env-var namespace=test'
+            }
+          }
         }
       }
       stage('TEST: Approval to Promote') {
