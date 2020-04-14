@@ -125,7 +125,7 @@ spec:
                     echo "Create all application resources"
                     openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=dev'))
                     openshift.apply(openshift.process(readFile('service.yml')))
-                    openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=dev', '-p', 'SUBDOMAIN=griffinsdemos.com'))
+                    openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=dev', '-p', 'SUBDOMAIN=apps.demo.griffinsdemos.com'))
                   }
                 }
               }
@@ -157,7 +157,7 @@ spec:
                     echo "Create all application resources"
                     openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=test'))
                     openshift.apply(openshift.process(readFile('service.yml')))
-                    openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=test', '-p', 'SUBDOMAIN=griffinsdemos.com'))
+                    openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=test', '-p', 'SUBDOMAIN=apps.demo.griffinsdemos.com'))
                   }
                 }
               }
@@ -195,7 +195,7 @@ spec:
                     echo "Create all application resources"
                     openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', 'IMAGE_NAMESPACE=summit-team', '-p', 'IMAGE_REGISTRY_URL=quay-mgt-demo.griffinsdemos.com', '-p', 'IMAGE_TAG=prod'))
                     openshift.apply(openshift.process(readFile('service.yml')))
-                    openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=prod', '-p', 'SUBDOMAIN=griffinsdemos.com'))
+                    openshift.apply(openshift.process(readFile('route.yml'), '-p', 'NAMESPACE=prod', '-p', 'SUBDOMAIN=apps.demo.griffinsdemos.com'))
                   }
                 }
               }
