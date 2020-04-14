@@ -135,6 +135,11 @@ spec:
           }
         }
       }
+      stage('DEV: Notification of Promotion') {
+        steps {
+          slackSend color: 'good', message: "${env.JOB_BASE_NAME} is deployed in dev now promoting to test"
+        }
+      }
       stage('TEST: Retag Image for Test') {
         steps {
           container('jenkins-slave-image-mgmt') {
@@ -169,6 +174,7 @@ spec:
       }
       stage('TEST: Approval to Promote') {
           steps {
+              slackSend color: 'good', message: "${env.JOB_BASE_NAME} is deployed in test and has passed AAT, are you ready to promote? ${env.BUILD_URL}"
               input 'Promote to PROD environment?'
           }
       }
@@ -197,6 +203,11 @@ spec:
               }
             }
           }
+        }
+      }
+      stage('PROD: Notification of Deployment') {
+        steps {
+          slackSend color: 'good', message: "${env.JOB_BASE_NAME} is deployed in prod"
         }
       }
     }
