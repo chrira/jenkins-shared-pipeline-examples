@@ -208,7 +208,6 @@ spec:
           }
         }
       }
-      // TODO: There is a potential race condition here with the image build, follow logs will solve
       stage('DEV: OpenShift Deploy Application') {
         steps {
           container('jenkins-slave-oc') {
