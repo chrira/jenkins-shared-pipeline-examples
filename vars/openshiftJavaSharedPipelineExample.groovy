@@ -199,7 +199,11 @@ spec:
 
               // can increase/decrease threshold here
               if(critical.size() > 0 || high.size() > 0) {
-                echo "Image did not meet acceptable threshold, marking UNSTABLE"
+                def unstableMessage = "Image did not meet acceptable threshold, marking UNSTABLE"
+
+                echo "${unstableMessage}"
+
+                slackSend color: '#FFFF00', message: "${unstableMessage}. There were ${critical.size()} critical vulnerabilities and ${high.size()} high vulnerabilities."
                 currentBuild.result = "UNSTABLE"
               }
             }
