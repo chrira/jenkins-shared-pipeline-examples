@@ -220,6 +220,10 @@ spec:
                     openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', "IMAGE_NAMESPACE=${imageNamespace}", '-p', "IMAGE_REGISTRY_URL=${imageRegistryUrl}", '-p', "IMAGE_TAG=${devNamespace}"))
                     openshift.apply(openshift.process(readFile('service.yml')))
                     openshift.apply(openshift.process(readFile('route.yml'), '-p', "NAMESPACE=${devNamespace}", '-p', "SUBDOMAIN=${subdomain}"))
+                    
+                    def dc = openshift.selector('dc', "${serviceName}")
+
+                    dc.rollout().status()
                   }
                 }
               }
@@ -251,6 +255,11 @@ spec:
                     openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', "IMAGE_NAMESPACE=${imageNamespace}", '-p', "IMAGE_REGISTRY_URL=${imageRegistryUrl}", '-p', "IMAGE_TAG=${testNamespace}"))
                     openshift.apply(openshift.process(readFile('service.yml')))
                     openshift.apply(openshift.process(readFile('route.yml'), '-p', "NAMESPACE=${testNamespace}", '-p', "SUBDOMAIN=${subdomain}"))
+
+                    def dc = openshift.selector('dc', "${serviceName}")
+
+                    dc.rollout().status()
+
                   }
                 }
               }
@@ -293,6 +302,11 @@ spec:
                     openshift.apply(openshift.process(readFile('deploymentConfig.yml'), '-p', "IMAGE_NAMESPACE=${imageNamespace}", '-p', "IMAGE_REGISTRY_URL=${imageRegistryUrl}", '-p', "IMAGE_TAG=${prodTag}"))
                     openshift.apply(openshift.process(readFile('service.yml')))
                     openshift.apply(openshift.process(readFile('route.yml'), '-p', "NAMESPACE=${prodNamespace}", '-p', "SUBDOMAIN=${subdomain}"))
+
+                    def dc = openshift.selector('dc', "${serviceName}")
+
+                    dc.rollout().status()
+
                   }
                 }
               }
