@@ -192,12 +192,13 @@ spec:
                 }
               }
 
-              echo "Image has ${critical.size()} critical vulnerabilities"
-              echo "Image has ${high.size()} high vulnerabilities"
-              echo "Image has ${medium.size()} medium vulnerabilities"
-              echo "Image has ${low.size()} low vulnerabilities"
-              echo "Image has ${negligible.size()} negligible vulnerabilities"
-              echo "Image has ${unknown.size()} unknown vulnerabilities"
+              echo "------------------CLAIR SCAN RESULTS------------------\n" +
+              "Image has ${critical.size()} critical vulnerabilities\n" +
+              "Image has ${high.size()} high vulnerabilities\n" +
+              "Image has ${medium.size()} medium vulnerabilities\n" +
+              "Image has ${low.size()} low vulnerabilities\n" +
+              "Image has ${negligible.size()} negligible vulnerabilities\n" +
+              "Image has ${unknown.size()} unknown vulnerabilities" 
 
               // error only on critical issues, can increase/decrease threshold here
               if(critical.size() > 0) {
