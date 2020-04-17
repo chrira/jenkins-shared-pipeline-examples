@@ -197,8 +197,8 @@ spec:
               "Image has ${negligible.size()} negligible vulnerabilities\n" +
               "Image has ${unknown.size()} unknown vulnerabilities" 
 
-              // error only on critical issues, can increase/decrease threshold here
-              if(critical.size() > 0) {
+              // can increase/decrease threshold here
+              if(critical.size() > 0 || high.size() > 0) {
                 echo "Image did not meet acceptable threshold, marking UNSTABLE"
                 currentBuild.result = "UNSTABLE"
               }
