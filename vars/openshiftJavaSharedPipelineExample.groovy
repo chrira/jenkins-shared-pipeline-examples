@@ -38,18 +38,14 @@ spec:
     command:
     - cat
     volumeMounts:
-    - mountPath: "/home/jenkins/agent"
-      name: workspace-volume
+    - mountPath: "/home/jenkins"
+      name: jenkins-maven
       readOnly: false
   - name: jenkins-slave-oc
     image: registry.redhat.io/openshift3/ose-cli
     tty: true
     command:
     - cat
-    volumeMounts:
-    - mountPath: "/home/jenkins/agent"
-      name: workspace-volume
-      readOnly: false
   - name: jenkins-slave-image-mgmt
     image: quay-mgt-demo.griffinsdemos.com/summit-team/jenkins-slave-image-mgmt
     tty: true
@@ -68,8 +64,9 @@ spec:
   - name: dockerconfigjson
     secret:
       secretName: quay-pull-secret
-  - name: workspace-volume
-    emptyDir: {}
+  - name: jenkins-maven
+    persistentVolumeClaim:
+      claimName: jenkins-maven
 """
       }
     }
