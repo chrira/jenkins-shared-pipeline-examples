@@ -73,7 +73,7 @@ spec:
     stages {
       stage('BUILD: Build and Package Application') {
         steps {
-          sh 'mvn package'
+          sh 'mvn package -Dmaven.test.skip=true'
         }
       }
       stage('DEV: SonarQube Scan') {
